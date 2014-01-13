@@ -18,8 +18,8 @@
 #include "cv.h"
 #include <iostream>
 
-void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp);
-void K_star_tps(float *c_pos, int c_num, float *K_star);
+void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp, cv::Mat cv_M);
+void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 ///////////////////////////////////////////////////////////////////////////////
 /// \brief method logic
 ///
@@ -42,7 +42,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  const int pixelCountAligned = height * stride;
  const int pixelAvailable = height * stride - c_num;
  float *p_value_cpu = new float [pixelCountAligned];
- float *c_value_cpu = new float [pixelCountAligned];
+ float *c_value_cpu = new float [c_num];
  float *c_pos_cpu = new float [c_num * 2];
  p_value_cpu = p_value;
  c_value_cpu = c_value;
@@ -50,14 +50,40 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 
  //float *M_U = new float [pixelAvailable * c_num];
  float *M = new float [pixelAvailable * (c_num + 3)];
- float *K_star = new float [(c_num + 3) * c_num];
- 
+ //float *K_star = new float [(c_num + 3) * c_num];
+ cv::Mat cv_M = cv::Mat::zeros(pixelAvailable, c_num + 3, CV_32FC1);
+ cv::Mat K_star = cv::Mat::zeros(c_num + 3, c_num, CV_32FC1);
+ cv::Mat I = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
+
  // M (mx(n+3)) : reshape M = [M_U M_P] M_P: m pixel points
- TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, M);
+ TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, M, cv_M);
  
  //printf("finish tpsbasisfunc \n");
  // K* ((n+3)xn) : 
  K_star_tps(c_pos_cpu, c_num, K_star); // copy
+ 
+ //std::cout << "K*: " << K_star << std::endl;
+ //int i = 0;
+ //int j = 0;
+ //int dif_count  = 0;
+ //for (; i < pixelAvailable; i++)
+ //{
+	 //for (; j < c_num + 3; j++)
+	 //{
+		 //if (cv_M.at<float>(i,j) != M[j * pixelAvailable + i])
+			 //dif_count++;
+	 //}
+ //}
+ //printf("dif_count is  %d \n", dif_count);
+ //construct I = M * K* * Y
+ cv::Mat Y = cv::Mat::zeros(c_num, 1, CV_32FC1);
+ int c_count = 0;
+ for (;c_count < c_num; c_count++)
+ {
+	Y.at<float>(c_count, 0) = c_value_cpu[c_count];
+ }
+
+ I = cv_M * K_star * Y;
  
  memcpy(tps_value, M, pixelAvailable * (c_num + 3) * sizeof(float));
  
@@ -76,7 +102,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 /// \param[in]  c_num        number of control points 
 /// \param[out] M_tps_value_cp tps basis function between control points and pixel points
 //////////////////////////////////////////////////////////////////////////////
-void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp)
+void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp, cv::Mat cv_M)
 { 
  //param for M_U 
  // M_U (mxn) : compute basis function: n control points v.s m pixel points
@@ -113,12 +139,18 @@ void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num,
    {
     double cp_pos_norm_pow2 = pow(abs(j - c_tmp_w),2) + pow(abs(i - c_tmp_h),2); 
     M_tps_value_cp[tps_count] = cp_pos_norm_pow2 * log(cp_pos_norm_pow2);
-    
+    // temp for cv_M
+    int cv_c_pos = (tps_count - tps_count % pixelAvailable) / pixelAvailable;  
+    int cv_p_pos = tps_count % pixelAvailable;
+    cv_M.at<float>(cv_p_pos, cv_c_pos) = M_tps_value_cp[tps_count];
     if (assign_count < pixelAvailable)
     {
      M_tps_value_cp[tps_count + ones_pos] = 1;
      M_tps_value_cp[tps_count + x_pos] = j;
      M_tps_value_cp[tps_count + y_pos] = i;
+     cv_M.at<float>(cv_p_pos, c_num) = 1;
+     cv_M.at<float>(cv_p_pos, c_num + 1) = j;
+     cv_M.at<float>(cv_p_pos, c_num + 2) = i;
      assign_count ++;
     }	
     tps_count++;
@@ -139,7 +171,7 @@ void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num,
 /// \param[in]  c_num 	     number of control points 
 /// \param[out] M_tps_value_cp tps basis function between control points and pixel points
 //////////////////////////////////////////////////////////////////////////////
-void K_star_tps(float *c_pos, int c_num, float *K_star)
+void K_star_tps(float *c_pos, int c_num, cv::Mat K_star)
 {
  int K_pos = 0;
  int K_star_pos = 0;
@@ -220,16 +252,6 @@ void K_star_tps(float *c_pos, int c_num, float *K_star)
   //K[(c_num + 2) + (c_num + i) * (c_num + 3)] = 0;
  //}
 
- printf("start fill result \n");
- //fill results to K_star
- for (i = 0; i < (c_num + 3); i++)
- {
-  for (j = 0; j < c_num; j++)
-  {
-   K_star_pos = i + j * (c_num + 3);
-   K_star[K_star_pos] = K.at<float>(j,i);
-  }
- }
      
  //printf("start show K \n");
  //for (i = 0; i < (c_num + 3); i++)
@@ -262,6 +284,19 @@ void K_star_tps(float *c_pos, int c_num, float *K_star)
 
  
  printf("finish show K \n");
+
+ printf("start fill result \n");
+ //fill results to K_star
+ for (i = 0; i < (c_num + 3); i++)
+ {
+  for (j = 0; j < c_num; j++)
+  {
+	  //K_star_pos = i + j * (c_num + 3);
+   K_star.at<float>(i,j) = inverted.at<float>(i,j);
+  }
+ }
+
+
  delete [] K_star_L;
  delete [] K_star_pixel;
 }
