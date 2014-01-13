@@ -122,7 +122,7 @@ bool LoadImageAsFP32(float *&img_data, int &img_w, int &img_h, int &img_s, const
 /// \return true if discrepancy is lower than a given threshold
 ///////////////////////////////////////////////////////////////////////////////
 bool CompareWithGold(int width, int height, int stride, int cp_num,
-                     const float *result_Gold, const float *result_CUDA) {
+                     const float *result_Gold, cv::Mat result_CUDA) {
 	float error = 0.0f;
 	float dif_max = 0.0f; 
 	int Gold_nan_count = 0;
@@ -143,16 +143,17 @@ bool CompareWithGold(int width, int height, int stride, int cp_num,
 		    {
 					    const int tps_pos = pixel_pos + cp_count * Tps_Size;	
 																
-					    error += fabsf(result_Gold[tps_pos] - result_CUDA[tps_pos]);
+					    //error += fabsf(result_Gold[tps_pos] - result_CUDA[tps_pos]);
+					    error += fabsf(result_Gold[tps_pos] - result_CUDA.at<float>(pixel_pos, cp_count));
 					    //if((i % 10 == 0) && (j % 10 == 0))
 					    //{
 						    //printf("result_Gold[%d] is : %f and result_CUDA[%d] is : %f\n",pos,result_Gold[pos],result_CUDA[pos],pos); 
 					     //}
-					    if((result_Gold[tps_pos] != result_CUDA[tps_pos]) && get_one_abnormal3 == 0)
+					    if((result_Gold[tps_pos] != result_CUDA.at<float>(pixel_pos, cp_count)) && get_one_abnormal3 == 0)
 					    {
 						Gold_CUDA_dif++;
 						//get_one_abnormal3++;
-						float dif = result_Gold[tps_pos] - result_CUDA[tps_pos];
+						float dif = result_Gold[tps_pos] - result_CUDA.at<float>(pixel_pos, cp_count);
 						//printf(" dif is %f \n", dif);	
 						//printf(" CPU is %f and CUDA is %f and pos is %d \n", result_Gold[tps_pos], result_CUDA[tps_pos], tps_pos);	
 						if ( fabsf(dif) >=  dif_max)
@@ -164,7 +165,7 @@ bool CompareWithGold(int width, int height, int stride, int cp_num,
 						//get_one_abnormal = 1;
 						//printf("pos CPU is %d \n",pos);
 					    }	
-					    if(isnan(result_CUDA[tps_pos]) && get_one_abnormal2 == 0 ) 
+					    if(isnan(result_CUDA.at<float>(pixel_pos, cp_count)) && get_one_abnormal2 == 0 ) 
 					    {
 						CUDA_nan_count++;	
 						//get_one_abnormal2 = 1;
@@ -323,7 +324,11 @@ int main(int argc, char **argv)
 	float *tps_valueCPU = new float [(stride * height - c_num) * (c_num + 3)]; 
 	// allocate host memory for GPU results
 	//float *tps_valueCUDA  = new float [(stride * height - c_num) * c_num];
-	float *tps_valueGPU  = new float [(stride * height - c_num) * (c_num + 3)];
+	//float *tps_valueGPU  = new float [(stride * height - c_num) * (c_num + 3)];
+	cv::Mat tps_valueGPU = cv::Mat::zeros(stride * height - c_num, c_num + 3, CV_32FC1);
+
+	cv::gpu::GpuMat tps_valueGPU_device;
+	tps_valueGPU_device.create(stride * height - c_num, c_num + 3, CV_32FC1);
 
 	//printf("h_source[10] is %f \n", h_source[10]);
 
@@ -338,7 +343,9 @@ int main(int argc, char **argv)
 	//printf("height is %d! \n",height);
 	//printf("stride is %d! \n",stride);
 	ComputeTPSCVGPU(p_value, c_value, c_pos, width, height, stride, c_num, 
-		    tps_valueGPU, K_cc); 
+		    tps_valueGPU_device, K_cc); 
+
+        tps_valueGPU_device.download(tps_valueGPU);
 	//ComputeFlowCUDA(p_value, c_value, c_pos, width, height, stride, c_num, 
 	//tps_valueCUDA, K_cc); 
 
@@ -358,7 +365,7 @@ int main(int argc, char **argv)
 
 	// free resources
 	delete [] tps_valueCPU;
-	delete [] tps_valueGPU;
+	//delete [] tps_valueGPU;
 	// report self-test status
 	//exit(status ? EXIT_SUCCESS : EXIT_FAILURE);
 	exit(1 ? EXIT_SUCCESS : EXIT_FAILURE);

@@ -1,5 +1,5 @@
 #include "common.h"
-__global__ void BasisFuncKernel(const float *c_pos, float *tps_basis, int w, int h, int s, int c_num);
+__global__ void BasisFuncKernel(const float *c_pos, cv::gpu::PtrStepSzf tps_basis, int w, int h, int s, int c_num);
 //__global__ void KstarFuncKernel(const float *c_pos, float *K_cc, int w, int h, int s, int c_num);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -15,7 +15,7 @@ __global__ void BasisFuncKernel(const float *c_pos, float *tps_basis, int w, int
 static
 void TpsBasisFunction(const float *c_pos,
                     int w, int h, int s, int c_num,
-                    float *M_tps_value_cp)
+                    cv::gpu::PtrStepSzf M_tps_value_cp)
 {
 	// CTA size
 	dim3 threads(32, 6);
@@ -149,7 +149,7 @@ void TpsBasisFunction(const float *c_pos,
 /////////////////////////////////////////////////////////////////////////////////
 __global__
 void BasisFuncKernel(const float *c_pos,
-		float *M_tps_value_cp,
+		cv::gpu::PtrStepSzf M_tps_value_cp,
 		int w, int h, int s, int c_num)
 {
 	const int ix = threadIdx.x + blockIdx.x * blockDim.x;
@@ -206,7 +206,8 @@ void BasisFuncKernel(const float *c_pos,
 		c_tmp_w = c_pos[num];
 		c_tmp_h = c_pos[num + 1];
 		cp_pos_norm_pow2 = (temp_ix - c_tmp_w) * (temp_ix -c_tmp_w) + (temp_iy - c_tmp_h) * (temp_iy - c_tmp_h);
-		M_tps_value_cp[tps_pos + c_count * (h * w - c_num)]= cp_pos_norm_pow2 *  log(cp_pos_norm_pow2); 
+		//M_tps_value_cp[tps_pos + c_count * (h * w - c_num)]= cp_pos_norm_pow2 *  log(cp_pos_norm_pow2); 
+		M_tps_value_cp(tps_pos,  c_count)= cp_pos_norm_pow2 *  log(cp_pos_norm_pow2); 
 		//tps_basis[tps_pos + c_count * (h * w - c_num)]= cp_pos_norm_pow2; 
 		if (c_count == 0)
 		{
@@ -214,9 +215,12 @@ void BasisFuncKernel(const float *c_pos,
 			int ones_pos = pixelAvailable * c_num;
 			int x_pos = pixelAvailable * (c_num + 1);
 			int y_pos = pixelAvailable * (c_num + 2);
-			M_tps_value_cp[tps_pos + ones_pos] = 1;
-			M_tps_value_cp[tps_pos + x_pos] = temp_ix;
-			M_tps_value_cp[tps_pos + y_pos] = temp_iy;
+			//M_tps_value_cp[tps_pos + ones_pos] = 1;
+			//M_tps_value_cp[tps_pos + x_pos] = temp_ix;
+			//M_tps_value_cp[tps_pos + y_pos] = temp_iy;
+			M_tps_value_cp(tps_pos,  c_num) = 1; 
+			M_tps_value_cp(tps_pos,  c_num + 1) = temp_ix; 
+			M_tps_value_cp(tps_pos,  c_num + 2) = temp_iy; 
 		}	
 		c_count = c_count + 1; 
 		num = num + 2;	

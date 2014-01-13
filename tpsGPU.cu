@@ -30,6 +30,7 @@ __global__
 void KstarFuncKernel(cv::gpu::PtrStepSzf dev_c_pos,
 		cv::gpu::PtrStepSzf  K_cc,
 		int w, int h, int s, int c_num);
+
 ///////////////////////////////////////////////////////////////////////////////
 /// \brief method logic
 ///
@@ -47,7 +48,7 @@ void ComputeTPSGPU(const float *p_value,
 		     const float *c_value,
 		     const float *c_pos, 
 		     int width, int height, int stride, int c_num,
-                     float *M_tps_value_cp, float *K_cc)
+                     cv::gpu::PtrStepSzf M_tps_value_cp, float *K_cc)
 {
     printf("Computing tps map on GPU...\n");
 
@@ -55,7 +56,7 @@ void ComputeTPSGPU(const float *p_value,
     //float *dev_I;
     //float *dev_CP;
     float *dev_c_pos;
-    float *dev_M_tps_value_cp; 
+    //float *dev_M_tps_value_cp; 
     //float *dev_K_cc; 
 
     //const int dataSize = stride * height * sizeof(float);
@@ -66,18 +67,18 @@ void ComputeTPSGPU(const float *p_value,
     //checkCudaErrors(cudaMalloc((void**)&dev_I, dataSize));
     //checkCudaErrors(cudaMalloc((void**)&dev_CP, dataSize));
     checkCudaErrors(cudaMalloc((void**)&dev_c_pos, cposSize));
-    checkCudaErrors(cudaMalloc((void**)&dev_M_tps_value_cp, tpsSize));
+    //checkCudaErrors(cudaMalloc((void**)&dev_M_tps_value_cp, tpsSize));
     //checkCudaErrors(cudaMalloc((void**)&dev_K_cc, kSize));
 
     //checkCudaErrors(cudaMemcpy((void *)dev_I, I, dataSize, cudaMemcpyHostToDevice));
     //checkCudaErrors(cudaMemcpy((void *)dev_CP, CP, dataSize, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy((void *)dev_c_pos, c_pos, cposSize, cudaMemcpyHostToDevice));
     
-    TpsBasisFunction(dev_c_pos, width, height, stride, c_num, dev_M_tps_value_cp);
+    TpsBasisFunction(dev_c_pos, width, height, stride, c_num, M_tps_value_cp);
     // compute K for onpencv to invert
     //K_star_KFunction(op_c_pos, width, height, stride, c_num, op_K_cc);
 
-    checkCudaErrors(cudaMemcpy(M_tps_value_cp, dev_M_tps_value_cp, tpsSize, cudaMemcpyDeviceToHost));
+    //checkCudaErrors(cudaMemcpy(M_tps_value_cp, dev_M_tps_value_cp, tpsSize, cudaMemcpyDeviceToHost));
     //checkCudaErrors(cudaMemcpy(K_cc, dev_K_cc, kSize, cudaMemcpyDeviceToHost));
     
     // cleanup
@@ -85,7 +86,7 @@ void ComputeTPSGPU(const float *p_value,
     //checkCudaErrors(cudaFree(dev_I));
     //checkCudaErrors(cudaFree(dev_CP));
     checkCudaErrors(cudaFree(dev_c_pos));
-    checkCudaErrors(cudaFree(dev_M_tps_value_cp));
+    //checkCudaErrors(cudaFree(dev_M_tps_value_cp));
     //checkCudaErrors(cudaFree(dev_K_cc));
 }
 
@@ -189,3 +190,4 @@ void KstarFuncKernel(cv::gpu::PtrStepSzf dev_c_pos,
 		}
 	}
 }
+

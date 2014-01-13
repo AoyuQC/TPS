@@ -39,9 +39,10 @@ void ComputeTPSCVGPU(const float *p_value,
 		     const float *c_value,
 		     const float *c_pos, 
 		     int width, int height, int stride, int c_num,
-                     float *M_tps_value_cp, float *K_cc)
+                     cv::gpu::PtrStepSzf M_tps_value_cp, float *K_cc)
 {
 	printf("Computing tps map on GPU...\n");
+	// test opencv mat replace M_tps_value_cp
 
 	ComputeTPSGPU(p_value, c_value, c_pos, width, height, stride, c_num, M_tps_value_cp, K_cc); 
 
