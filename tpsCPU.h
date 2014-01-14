@@ -23,6 +23,6 @@ void ComputeTPSCPU(float *p_valueI, // source frame
                      int height,      // frame height
                      int stride,      // row access stride
                      int c_num,     // smoothness coefficient
-                     cv::Mat tps_valueCPU);       // output vertical flow
+                     float * tps_valueCPU);       // output vertical flow
 
 #endif

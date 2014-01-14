@@ -31,15 +31,15 @@ const float THRESHOLD = 0.05f;
 
 //private define
 #define IMAGE_SIZE
-//#define ANALYSE_POINTS
-#define COMPARE_RESULTS
+#define ANALYSE_POINTS
+//#define COMPARE_RESULTS
 
 //private function
 bool LoadImageAsFP32(float *&img_data, int &img_w, int &img_h, int &img_s, const char *name, const char *exePath, float *&control_point_value, float *&control_point_pos, int &control_point_num);
  
 bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat result_Gold, cv::Mat result_CUDA);
 
-void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos, float *tps_valueGold, float *tps_valueCUDA);
+void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos, cv::Mat tps_valueGold, cv::Mat tps_valueCUDA);
 
 
 /// application entry point
@@ -86,19 +86,18 @@ int main(int argc, char **argv)
  
  // allocate host memory for CPU results
  cv::Mat tps_valueCPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
+ float * tps_valueCPU_ptr = (float *) tps_valueCPU.data;
  
  // allocate host memory for GPU results
  cv::Mat tps_valueGPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
  
  // algorithmn of CPU edition
- ComputeTPSCPU(p_value, c_value, c_pos, width, height, stride, c_num, 
- 	    tps_valueCPU);
+ ComputeTPSCPU(p_value, c_value, c_pos, width, height, stride, c_num, tps_valueCPU_ptr);
  
  printf("run to here CPU \n");
  
  // algorithmn of GPU edition
- ComputeTPSCVGPU(p_value, c_value, c_pos, width, height, stride, c_num, 
- 	    tps_valueGPU, K_cc); 
+ ComputeTPSCVGPU(p_value, c_value, c_pos, width, height, stride, c_num, tps_valueGPU, K_cc); 
  
  printf("run to here GPU \n"); 
  
@@ -108,10 +107,11 @@ int main(int argc, char **argv)
  	{
  		printf(" control point %d is width: %f and height: %f \n",i,c_pos[i],c_pos[i + 1]);
  		i = i + 2;
- 	} //int tps_pos[5] = {68060, 68097, 68138, 68189, 68220};	
+ 	} 
+	int tps_pos[5] = {68060, 68097, 68138, 68189, 68220};	
  	for (int i = 0; i < 5; i++)
  	{ 	
- 		tps_by_points(tps_pos[i], width, height, c_num, c_pos, tps_valueGold, tps_valueCUDA);
+ 		tps_by_points(tps_pos[i], width, height, c_num, c_pos, tps_valueCPU, tps_valueGPU);
  	}	
 	printf("\n");
  #endif
@@ -123,6 +123,7 @@ int main(int argc, char **argv)
  
  // free resources
  tps_valueCPU.release();
+ tps_valueGPU.release();
  // report self-test status
  exit(1 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -303,7 +304,7 @@ bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat resu
 /// \param[in] name cp pos 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos, float *tps_valueGold, float *tps_valueCUDA)
+void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos, cv::Mat tps_valueGold, cv::Mat tps_valueCUDA)
 {
  int pixel_Size = width * height - cp_num;
  int cp_pos_cur = (tps_pos - tps_pos % pixel_Size) / pixel_Size;
@@ -329,6 +330,7 @@ void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos
  		i = i + 2;
  	}
  }	
+
  int pixel_width = pixel_pos % width;
  int pixel_height = (pixel_pos - pixel_width) / width;
  printf(" start point to point check \n");
@@ -341,8 +343,8 @@ void tps_by_points(int tps_pos, int width, int height, int cp_num, float *cp_pos
  int U = (cp_pos_w - pixel_width) * (cp_pos_w - pixel_width) + (cp_pos_h - pixel_height) * (cp_pos_h - pixel_height);
  float result = U * log(U);
  printf(" tps result is %f \n", result);
- printf(" CPU value is %f \n", tps_valueGold[tps_pos]); 
- printf(" GPU value is %f \n", tps_valueCUDA[tps_pos]); 
+ printf(" CPU value is %f \n", tps_valueGold.at<float>(pixel_pos, cp_pos_cur)); 
+ printf(" GPU value is %f \n", tps_valueCUDA.at<float>(pixel_pos, cp_pos_cur)); 
 }
 
 

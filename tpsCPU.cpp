@@ -15,6 +15,8 @@
 
 #include "common.h"
 #include "cv.h"
+#include "core/core.hpp"
+#include "highgui/highgui.hpp"
 #include <iostream>
 
 // private function
@@ -38,7 +40,7 @@ void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 ///////////////////////////////////////////////////////////////////////////////
 void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
                      int width, int height, int stride, int c_num,
-                     cv::Mat tps_valueCPU)
+                     float *tps_valueCPU)
 {
  printf("Computing tps on CPU...\n");
  
@@ -50,6 +52,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 
  cv::Mat M = cv::Mat::zeros(pixelAvailable, c_num + 3, CV_32FC1);
  cv::Mat K_star = cv::Mat::zeros(c_num + 3, c_num, CV_32FC1);
+ cv::Mat I = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
 
  // M (mx(n+3)) : reshape M = [M_U M_P] M_P: m pixel points
  TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, M);
@@ -65,12 +68,22 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 	Y.at<float>(c_count, 0) = c_value_cpu[c_count];
  }
 
- tps_valueCPU = M * K_star * Y; 
+ I = M * K_star * Y; 
+ //printf("test number is %f", I(2,2));
+ //cv::Mat nonZeroCoordinate;
+ //findNonZero(I, nonZeroCoordinate);
+ for (int i = 0; i < I.total(); i++)
+ {
+	if (I.at<float>(i,0) != 0)
+        	std::cout << "one nonzero !" << std::endl;
+ }
+ tps_valueCPU = (float *)I.data; 
  
  // cleanup
  M.release();
  K_star.release();
  Y.release(); 
+ I.release(); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
