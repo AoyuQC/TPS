@@ -14,11 +14,11 @@
  */
 
 #include "common.h"
-#include "tpsCPU.h"
+//#include "tpsCPU.h"
 #include "cv.h"
 #include <iostream>
 
-void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp, cv::Mat cv_M);
+void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, cv::Mat cv_M);
 void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 ///////////////////////////////////////////////////////////////////////////////
 /// \brief method logic
@@ -35,7 +35,7 @@ void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 ///////////////////////////////////////////////////////////////////////////////
 void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
                      int width, int height, int stride, int c_num,
-                     float *tps_value)
+                     cv::Mat tps_value)
 {
  printf("Computing tps on CPU...\n");
  
@@ -48,7 +48,6 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  c_value_cpu = c_value;
  c_pos_cpu = c_pos; 
 
- //float *M_U = new float [pixelAvailable * c_num];
  float *M = new float [pixelAvailable * (c_num + 3)];
  //float *K_star = new float [(c_num + 3) * c_num];
  cv::Mat cv_M = cv::Mat::zeros(pixelAvailable, c_num + 3, CV_32FC1);
@@ -56,7 +55,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  cv::Mat I = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
 
  // M (mx(n+3)) : reshape M = [M_U M_P] M_P: m pixel points
- TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, M, cv_M);
+ TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, tps_value);
  
  //printf("finish tpsbasisfunc \n");
  // K* ((n+3)xn) : 
@@ -85,7 +84,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 
  I = cv_M * K_star * Y;
  
- memcpy(tps_value, M, pixelAvailable * (c_num + 3) * sizeof(float));
+ //memcpy(tps_value, M, pixelAvailable * (c_num + 3) * sizeof(float));
  
  // cleanup
  delete [] M;
@@ -102,7 +101,7 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 /// \param[in]  c_num        number of control points 
 /// \param[out] M_tps_value_cp tps basis function between control points and pixel points
 //////////////////////////////////////////////////////////////////////////////
-void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, float *M_tps_value_cp, cv::Mat cv_M)
+void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, cv::Mat cv_M)
 { 
  //param for M_U 
  // M_U (mxn) : compute basis function: n control points v.s m pixel points
@@ -138,16 +137,16 @@ void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num,
    if (value_status == 1)
    {
     double cp_pos_norm_pow2 = pow(abs(j - c_tmp_w),2) + pow(abs(i - c_tmp_h),2); 
-    M_tps_value_cp[tps_count] = cp_pos_norm_pow2 * log(cp_pos_norm_pow2);
+    //M_tps_value_cp[tps_count] = cp_pos_norm_pow2 * log(cp_pos_norm_pow2);
     // temp for cv_M
     int cv_c_pos = (tps_count - tps_count % pixelAvailable) / pixelAvailable;  
     int cv_p_pos = tps_count % pixelAvailable;
-    cv_M.at<float>(cv_p_pos, cv_c_pos) = M_tps_value_cp[tps_count];
+    cv_M.at<float>(cv_p_pos, cv_c_pos) = cp_pos_norm_pow2 * log(cp_pos_norm_pow2); 
     if (assign_count < pixelAvailable)
     {
-     M_tps_value_cp[tps_count + ones_pos] = 1;
-     M_tps_value_cp[tps_count + x_pos] = j;
-     M_tps_value_cp[tps_count + y_pos] = i;
+	    //M_tps_value_cp[tps_count + ones_pos] = 1;
+	    //M_tps_value_cp[tps_count + x_pos] = j;
+	    //M_tps_value_cp[tps_count + y_pos] = i;
      cv_M.at<float>(cv_p_pos, c_num) = 1;
      cv_M.at<float>(cv_p_pos, c_num + 1) = j;
      cv_M.at<float>(cv_p_pos, c_num + 2) = i;
