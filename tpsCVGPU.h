@@ -24,7 +24,7 @@ void ComputeTPSCVGPU(const float *p_valueI, // source frame
                      int height,      // frame height
                      int stride,      // row access stride
                      int c_num,     // smoothness coefficient
-                     cv::gpu::PtrStepSzf tps_value,       // output vertical flow
+                     cv::Mat tps_value,       // output vertical flow
                      float *K_cc);       //k* to be inverted 
 
 #endif

@@ -77,19 +77,18 @@ int main(int argc, char **argv)
  }
  
  #ifdef IMAGE_SIZE
+	printf("\n");
  	printf("width id %d! \n",width);   
  	printf("height is %d! \n",height);
  	printf("stride is %d! \n",stride);
+	printf("\n");
  #endif
  
  // allocate host memory for CPU results
- //float *tps_valueCPU = new float [(stride * height - c_num) * (c_num + 3)]; 
- cv::Mat tps_valueCPU = cv::Mat::zeros(stride * height - c_num, c_num + 3, CV_32FC1);
+ cv::Mat tps_valueCPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
  
  // allocate host memory for GPU results
- cv::Mat tps_valueGPU = cv::Mat::zeros(stride * height - c_num, c_num + 3, CV_32FC1);
- cv::gpu::GpuMat tps_valueGPU_device;
- tps_valueGPU_device.create(stride * height - c_num, c_num + 3, CV_32FC1);
+ cv::Mat tps_valueGPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
  
  // algorithmn of CPU edition
  ComputeTPSCPU(p_value, c_value, c_pos, width, height, stride, c_num, 
@@ -99,9 +98,7 @@ int main(int argc, char **argv)
  
  // algorithmn of GPU edition
  ComputeTPSCVGPU(p_value, c_value, c_pos, width, height, stride, c_num, 
- 	    tps_valueGPU_device, K_cc); 
- 
- tps_valueGPU_device.download(tps_valueGPU);
+ 	    tps_valueGPU, K_cc); 
  
  printf("run to here GPU \n"); 
  
@@ -116,6 +113,7 @@ int main(int argc, char **argv)
  	{ 	
  		tps_by_points(tps_pos[i], width, height, c_num, c_pos, tps_valueGold, tps_valueCUDA);
  	}	
+	printf("\n");
  #endif
  
  #ifdef COMPARE_RESULTS 
@@ -232,7 +230,8 @@ bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat resu
  int CPU_zero_count = 0; 
  int cp_count = 0; 
  const int Tps_Size = width * height - cp_num;
- for (; cp_count < (cp_num + 3); ++cp_count)
+ //for (; cp_count < (cp_num + 3); ++cp_count)
+ for (; cp_count < 1; ++cp_count)
  { 
  	    for (pixel_pos = 0; pixel_pos < Tps_Size; ++pixel_pos)
  	    {
@@ -281,6 +280,7 @@ bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat resu
 		    //}	
  	    }		    
  }
+ printf("\n");
  printf("Gold_CUDA_dif is %d \n",Gold_CUDA_dif);
  printf("Gold_nan_count is %d \n",Gold_nan_count);
  printf("CUDA_nan_count is %d \n",CUDA_nan_count);

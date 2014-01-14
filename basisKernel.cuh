@@ -211,13 +211,6 @@ void BasisFuncKernel(const float *c_pos,
 		//tps_basis[tps_pos + c_count * (h * w - c_num)]= cp_pos_norm_pow2; 
 		if (c_count == 0)
 		{
-			int pixelAvailable = w * h - c_num;
-			int ones_pos = pixelAvailable * c_num;
-			int x_pos = pixelAvailable * (c_num + 1);
-			int y_pos = pixelAvailable * (c_num + 2);
-			//M_tps_value_cp[tps_pos + ones_pos] = 1;
-			//M_tps_value_cp[tps_pos + x_pos] = temp_ix;
-			//M_tps_value_cp[tps_pos + y_pos] = temp_iy;
 			M_tps_value_cp(tps_pos,  c_num) = 1; 
 			M_tps_value_cp(tps_pos,  c_num + 1) = temp_ix; 
 			M_tps_value_cp(tps_pos,  c_num + 2) = temp_iy; 
