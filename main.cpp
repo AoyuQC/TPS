@@ -75,6 +75,11 @@ int main(int argc, char **argv)
  {
  exit(EXIT_FAILURE);
  }
+ //printf("\n");
+ //printf("c_value 1: %f \n", c_value[0]);
+ //printf("c_value 2: %f \n", c_value[1]);
+ //printf("c_pos 1: %f \n", c_pos[0]);
+ //printf("c_pos 2: %f \n", c_pos[1]);
  
  #ifdef IMAGE_SIZE
 	printf("\n");
@@ -86,13 +91,13 @@ int main(int argc, char **argv)
  
  // allocate host memory for CPU results
  cv::Mat tps_valueCPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
- float * tps_valueCPU_ptr = (float *) tps_valueCPU.data;
+ //float * tps_valueCPU_ptr = (float *) tps_valueCPU.data;
  
  // allocate host memory for GPU results
  cv::Mat tps_valueGPU = cv::Mat::zeros(stride * height - c_num, 1, CV_32FC1);
  
  // algorithmn of CPU edition
- ComputeTPSCPU(p_value, c_value, c_pos, width, height, stride, c_num, tps_valueCPU_ptr);
+ ComputeTPSCPU(p_value, c_value, c_pos, width, height, stride, c_num, tps_valueCPU);
  
  printf("run to here CPU \n");
  
@@ -193,7 +198,7 @@ bool LoadImageAsFP32(float *&img_data, int &img_w, int &img_h, int &img_s, const
  	break;
  }
  //printf("num_count is %d \n",num_count);
- control_point_value[num_count + 500] = img_data[num_count + 500];
+ control_point_value[num_count/2] = img_data[num_count + 500];
  // position: width value 
  control_point_pos[num_count] = (num_count + 500) % img_s;
  // position: height value
@@ -228,7 +233,7 @@ bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat resu
  int tps_pos = 0;
  int pixel_pos = 0;
  int CUDA_zero_count = 0; 
- int CPU_zero_count = 0; 
+ int Gold_zero_count = 0; 
  int cp_count = 0; 
  const int Tps_Size = width * height - cp_num;
  //for (; cp_count < (cp_num + 3); ++cp_count)
@@ -268,23 +273,25 @@ bool CompareWithGold(int width, int height, int stride, int cp_num, cv::Mat resu
 			//printf("pos GPU is %d \n",tps_pos);
 			//printf("next one is %f \n",result_CUDA[tps_pos+1]);
 		    }
-		    //if(result_CUDA[tps_pos] == 0 ) 
-		    //{
-			//CUDA_zero_count++;
-			////printf("last one is %f \n",result_CUDA[tps_pos-1]);
-			////printf("pos GPU is %d \n",tps_pos);
-			////printf("next one is %f \n",result_CUDA[tps_pos+1]);
-		    //}	
-		    //if(result_Gold[tps_pos] == 0 ) 
-		    //{
-			//CPU_zero_count++;
-		    //}	
- 	    }		    
- }
+		    if(result_Gold.at<float>(pixel_pos, cp_count) == 0)
+		    {
+			    Gold_zero_count++;
+			    ////printf("last one is %f \n",result_CUDA[tps_pos-1]);
+			    ////printf("pos GPU is %d \n",tps_pos);
+			    ////printf("next one is %f \n",result_CUDA[tps_pos+1]);
+		    }	
+		    if(result_CUDA.at<float>(pixel_pos, cp_count) == 0 ) 
+		    {
+			    CUDA_zero_count++;
+		    }
+	    }	
+ }		    
  printf("\n");
  printf("Gold_CUDA_dif is %d \n",Gold_CUDA_dif);
  printf("Gold_nan_count is %d \n",Gold_nan_count);
+ printf("Gold_zero_count is %d \n",Gold_zero_count);
  printf("CUDA_nan_count is %d \n",CUDA_nan_count);
+ printf("CUDA_zero_count is %d \n",CUDA_zero_count);
  printf("dif_max is %f \n",dif_max);
  printf("cp_count is %d \n",cp_count);
  //printf("CUDA_zero_count is %d \n",CUDA_zero_count);

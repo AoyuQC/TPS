@@ -40,7 +40,7 @@ void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 ///////////////////////////////////////////////////////////////////////////////
 void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
                      int width, int height, int stride, int c_num,
-                     float *tps_valueCPU)
+                     cv::Mat tps_valueCPU)
 {
  printf("Computing tps on CPU...\n");
  
@@ -74,10 +74,10 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  //findNonZero(I, nonZeroCoordinate);
  for (int i = 0; i < I.total(); i++)
  {
-	if (I.at<float>(i,0) != 0)
+	if (I.at<float>(i,0) == 0)
         	std::cout << "one nonzero !" << std::endl;
  }
- tps_valueCPU = (float *)I.data; 
+ I.copyTo(tps_valueCPU); 
  
  // cleanup
  M.release();

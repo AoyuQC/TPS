@@ -41,14 +41,16 @@ void ComputeTPSCVGPU(const float *p_value,
 		     const float *c_value,
 		     const float *c_pos, 
 		     int width, int height, int stride, int c_num,
-                     cv::Mat I, float *K_cc)
+                     cv::Mat tps_valueGPU, float *K_cc)
 {
  printf("Computing tps map on GPU...\n");
+ 
+ cv::Mat I = cv::Mat::zeros(width * height - c_num, 1, CV_32FC1);
  
  // M (mx(n+3)) : reshape M = [M_U M_P] M_P: m pixel points
  cv::gpu::GpuMat gpu_M;
  cv::Mat M;
- gpu_M.create(width * stride - c_num, c_num + 3, CV_32FC1);
+ gpu_M.create(width * height - c_num, c_num + 3, CV_32FC1);
 
  ComputeTPSGPU(p_value, c_value, c_pos, width, height, stride, c_num, gpu_M, K_cc); 
 
@@ -93,5 +95,45 @@ void ComputeTPSCVGPU(const float *p_value,
  }
  
  I = M * gpu_K_star * Y;  
+
+ //int count = 0;
+ //int M_size = M.total();
+ //int gpu_K_star_size = gpu_K_star.total();
+ //int Y_size = Y.total();
+ //int I_size = I.total();
+ //int ii = 0;
+ //for (ii = 0; i < I.total(); i++)
+ //{
+	 ////if (I.at<float>(i,0) == 0)
+		//count++;
+ //}
+        //std::cout << "M zero : " << count <<  std::endl;
+        //std::cout << "I count : " << ii <<  std::endl;
+        //std::cout << "M size : " << M_size << std::endl;
+        //std::cout << "K* size : " << gpu_K_star_size << std::endl;
+        //std::cout << "Y size : " << Y_size << std::endl;
+        //std::cout << "I size : " << I_size << " \n " << std::endl;
+
+ //count = 0;
+ //for (int i = 0; i < gpu_K_star.total(); i++)
+ //{
+	//if (gpu_K_star.at<float>(i,0) == 0)
+		//count++;
+ //}
+        //std::cout << "K* zero : %d \n" << count << std::endl;
+
+ //count = 0;
+ //for (int i = 0; i < Y.total(); i++)
+ //{
+	//if (Y.at<float>(i,0) == 0)
+		//count++;
+ //}
+        //std::cout << "Y zero : %d \n" << count << std::endl;
+ I.copyTo(tps_valueGPU);
+
+ I.release();
+ M.release();
+ gpu_K_star.release();
+ Y.release();
 }
 

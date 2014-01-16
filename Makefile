@@ -82,6 +82,7 @@ endif
 dbg = 1
 ifeq ($(dbg),1)
       NVCCFLAGS += -g -G
+      CCFLAGS += -g 
 #NVCCFLAGS += -O0
       TARGET := debug
 else
@@ -127,18 +128,19 @@ main.o: main.cpp
 	$(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_SM30) -o $@ -c $<
 
 tpsCVGPU.o: tpsCVGPU.cpp
-	g++ $(CCFLAGS) $(INCLUDES) -o $@ -c $<	
+	nvcc $(CCFLAGS) $(INCLUDES) -o $@ -c $<	
 
 tpsGPU.o: tpsGPU.cu basisKernel.cuh
 	nvcc $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_SM30) -o $@ -c $<
 
 tpsCPU.o: tpsCPU.cpp
-	g++ $(CCFLAGS) $(INCLUDES) -o $@ -c $<
+	#g++ $(CCFLAGS) $(INCLUDES) -o $@ -c $<
+	nvcc -g -G $(CCFLAGS) $(INCLUDES) -o $@ -c $<
 
 TPSmoduletest: main.o tpsCVGPU.o tpsGPU.o tpsCPU.o  
-	g++ main.o tpsCVGPU.o tpsCPU.o tpsGPU.o `pkg-config --libs opencv` -L$(CUDA_PATH)/lib64 -o $@ 
+	g++ -g  main.o tpsCVGPU.o tpsCPU.o tpsGPU.o `pkg-config --libs opencv` -L$(CUDA_PATH)/lib64 -o $@ 
 	mv $@ ./bin
-	mv main.o tpsCVGPU.o tpsCPU.o tpsGPU.o ./obj 
+	#mv main.o tpsCVGPU.o tpsCPU.o tpsGPU.o ./obj 
 	
 
 run: build
