@@ -131,9 +131,18 @@ void ComputeTPSCVGPU(const float *p_value,
         //std::cout << "Y zero : %d \n" << count << std::endl;
  I.copyTo(tps_valueGPU);
 
+ //CPU side
+ temp_c_pos.release();
+ 
  I.release();
  M.release();
+ gpu_host_inverted.release();
+ gpu_host_K.release();
  gpu_K_star.release();
  Y.release();
+ //gpu side
+ gpu_M.release();
+ op_c_pos.release();
+ op_K_cc.release();
 }
 

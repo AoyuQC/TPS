@@ -20,6 +20,7 @@
 #include <iostream>
 
 // private function
+void Warp_2D_CPU(cv::Mat Init_Mat, int width, int height, int stride, float *c_pos, int c_num, cv::Mat Warp_Mat);
 void TpsBasisFunc_CP(float *c_pos, int width, int height, int stride, int c_num, cv::Mat cv_M);
 void K_star_tps(float *c_pos, int c_num, cv::Mat K_star);
 
@@ -77,8 +78,16 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
 	if (I.at<float>(i,0) == 0)
         	std::cout << "one nonzero !" << std::endl;
  }
- I.copyTo(tps_valueCPU); 
  
+ cv::Mat Warp_Mat = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
+ Warp_2D_CPU(Y, width, height, stride, c_pos, c_num, Warp_Mat);
+
+ cv::Mat diff;
+ cv::Mat test_Mat = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
+ cv::compare(test_Mat, I, diff, cv::CMP_NE);
+ std::cout << "cv::compare " << cv::countNonZero(diff) << std::endl; 
+
+ Warp_Mat.copyTo(tps_valueCPU); 
  // cleanup
  M.release();
  K_star.release();
@@ -86,6 +95,45 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  I.release(); 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// \brief 2D warp function: Warp_Mat = M x K* x Init_Mat 
+///
+/// compute tps basis function between control points and pixel points 
+/// \param[in]  Init_Mat     initial matrix before warp funciton 
+/// \param[in]  width        images width
+/// \param[in]  height       images height
+/// \param[in]  stride       images stride
+/// \param[in]  c_pos        position of control points
+/// \param[in]  c_num	     number of control points 
+/// \param[out] Warp_Mat     mapped matrix through warp funciton 
+//////////////////////////////////////////////////////////////////////////////
+void Warp_2D_CPU(cv::Mat Init_Mat, int width, int height, int stride, float *c_pos, int c_num, cv::Mat Warp_Mat)
+{
+ const int pixelAvailable = height * stride - c_num;
+ float *c_value_cpu = new float [c_num];
+ float *c_pos_cpu = new float [c_num * 2];
+ c_pos_cpu = c_pos; 
+
+ cv::Mat M = cv::Mat::zeros(pixelAvailable, c_num + 3, CV_32FC1);
+ cv::Mat K_star = cv::Mat::zeros(c_num + 3, c_num, CV_32FC1);
+ cv::Mat I_temp = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
+
+ // M (mx(n+3)) : reshape M = [M_U M_P] M_P: m pixel points
+ TpsBasisFunc_CP(c_pos_cpu, width, height, stride, c_num, M);
+  
+ // K* ((n+3)xn) : 
+ K_star_tps(c_pos_cpu, c_num, K_star); // copy
+
+ //construct I = M x  K* x Init_Mat
+ I_temp = M * K_star * Init_Mat; 
+
+ I_temp.copyTo(Warp_Mat);
+ 
+ // cleanup
+ M.release();
+ K_star.release();
+ I_temp.release(); 
+}
 ///////////////////////////////////////////////////////////////////////////////
 /// \brief tps basis function: control points and pixel points 
 ///

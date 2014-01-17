@@ -32,7 +32,7 @@ const float THRESHOLD = 0.05f;
 //private define
 #define IMAGE_SIZE
 #define ANALYSE_POINTS
-//#define COMPARE_RESULTS
+#define COMPARE_RESULTS
 
 //private function
 bool LoadImageAsFP32(float *&img_data, int &img_w, int &img_h, int &img_s, const char *name, const char *exePath, float *&control_point_value, float *&control_point_pos, int &control_point_num);
