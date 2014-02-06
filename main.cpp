@@ -19,9 +19,9 @@ const float THRESHOLD = 0.05f;
 //opencv cuda
 #include "cv.h"
 #include <iostream>
-#include "opencv.hpp"
-#include "gpu/gpu.hpp"
-#include "core/cuda_devptrs.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/gpu/gpu.hpp"
+#include "opencv2/core/cuda_devptrs.hpp"
 
 #include <cuda_runtime.h>
 #include "common.h"

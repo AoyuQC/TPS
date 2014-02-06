@@ -104,7 +104,8 @@ ALL_LDFLAGS += $(EXTRA_NVCCLDFLAGS)
 ALL_LDFLAGS += $(addprefix -Xlinker ,$(EXTRA_LDFLAGS))
 
 # Common includes and paths for CUDA
-INCLUDES  := -I /home/oilpig/cuda-workspace/samples/common/inc
+# INCLUDES  := -I /home/oilpig/cuda-workspace/samples/common/inc
+INCLUDES  := -I /home/oilpig/WD/common/inc
 LIBRARIES := -L/home/oilpig/Downloads/opencv-2.4.7/release/lib
 
 ################################################################################

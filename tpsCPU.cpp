@@ -15,8 +15,8 @@
 
 #include "common.h"
 #include "cv.h"
-#include "core/core.hpp"
-#include "highgui/highgui.hpp"
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
 #include <iostream>
 
 // private function
@@ -86,6 +86,41 @@ void ComputeTPSCPU(float *p_value, float *c_value, float *c_pos,
  cv::Mat test_Mat = cv::Mat::zeros(pixelAvailable, 1, CV_32FC1);
  cv::compare(test_Mat, I, diff, cv::CMP_NE);
  std::cout << "cv::compare " << cv::countNonZero(diff) << std::endl; 
+
+ //test for Jacobian_ref_w
+ //cv::Mat M_i = cv::Mat::zeros(1, c_num + 3, CV_32FC1); 
+ //M_i = M.row(0);
+ //temp for 3D position of control points c_pos_cpu_3D
+ cv::Mat c_pos_cpu_3D = cv::Mat::zeros(c_num, 4, CV_32FC1);
+ cv::Mat p_pos_cpu_3D = cv::Mat::zeros(pixelAvailable, 3, CV_32FC1);
+ cv::Mat p_pos_cpu = cv::Mat::zeros(pixelAvailable, 2, CV_32FC1);
+ //temp for camera calibrarion matrix
+ cv::Mat C_T = cv::Mat(4, 2, CV32FC1); 
+ randu(C_T, Scalar(0), Scalar(6));
+
+ //debug assign value to c_pos_cpu_3D
+ int c_index = 0;
+ for (int c_count = 0; c_count < c_num; c_count++)
+ {
+ 	c_pos_cpu_3D.at<float>(c_count, 0) = c_pos_cpu[c_index];
+ 	c_pos_cpu_3D.at<float>(c_count, 1) = c_pos_cpu[c_index + 1];
+ 	c_pos_cpu_3D.at<float>(c_count, 2) = 1;
+ 	c_pos_cpu_3D.at<float>(c_count, 3) = 1;
+ 	c_index = c_index + 2;
+ }
+
+ p_pos_cpu_3D.row(0) = M.row(0) * K_star * c_pos_cpu_3D * C_T;
+ 
+ //3D index -> 2D index
+ p_pos_cpu.at<float>(0, 0) = p_pos_cpu_3D.at<float>(0, 0) / p_pos_cpu_3D.at<float>(0, 2); 
+ p_pos_cpu.at<float>(0, 1) = p_pos_cpu_3D.at<float>(0, 1) / p_pos_cpu_3D.at<float>(0, 2); 
+
+
+
+
+
+
+
 
  Warp_Mat.copyTo(tps_valueCPU); 
  // cleanup

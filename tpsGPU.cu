@@ -15,7 +15,7 @@
  */
 
 #include "common.h"
-#include "core/cuda_devptrs.hpp"
+#include "opencv2/core/cuda_devptrs.hpp"
 
 // include kernels
 //#include "downscaleKernel.cuh"
